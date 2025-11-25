@@ -32,7 +32,7 @@ test.describe('Integración Frontend-Backend', () => {
       description: 'Creado via API para test E2E'
     };
 
-    const createResponse = await request.post(`${BACKEND_URL}/api/productss`, {
+    const createResponse = await request.post(`${BACKEND_URL}/api/products`, {
       data: newCoffee
     });
     expect(createResponse.ok()).toBeTruthy();
