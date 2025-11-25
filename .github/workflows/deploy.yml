@@ -1,0 +1,199 @@
+name: CI/CD CoffeeHub
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+
+  # ======================================================
+  # 1️⃣ BUILD + TEST (Backend + Frontend)
+  # ======================================================
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # -----------------------------
+      # ▶️ CREAR .env.test PARA BACKEND
+      # -----------------------------
+      - name: Create .env.test for backend
+        working-directory: coffehub/backend
+        run: |
+          echo "MONGODB_URI=${{ secrets.MONGODB_URI_TEST }}" > .env.test
+          echo "NODE_ENV=test" >> .env.test
+          echo "PORT=4001" >> .env.test
+
+      # -----------------------------
+      # BACKEND TESTS
+      # -----------------------------
+      - name: Install backend dependencies
+        working-directory: coffehub/backend
+        run: npm install
+
+      - name: Run backend tests
+        working-directory: coffehub/backend
+        run: npm test
+
+      # -----------------------------
+      # FRONTEND TESTS
+      # -----------------------------
+      - name: Install frontend dependencies
+        working-directory: coffehub/frontend
+        run: npm install
+
+      - name: Run frontend tests
+        working-directory: coffehub/frontend
+        run: npm test
+
+      # -----------------------------
+      # 🔼 SUBIR ARTEFACTOS (Backend + Frontend)
+      # -----------------------------
+      - name: Upload Backend Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-code
+          path: coffehub/backend
+
+      - name: Upload Frontend Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-code
+          path: coffehub/frontend
+
+
+  # ======================================================
+  # 2️⃣ BUILD + PUSH DOCKER IMAGES (QA)
+  # ======================================================
+  build-push:
+    needs: build-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      # -----------------------------
+      # 🔽 DESCARGAR ARTEFACTO BACKEND
+      # -----------------------------
+      - name: Download Backend Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-code
+          path: coffehub/backend
+
+      # -----------------------------
+      # 🔽 DESCARGAR ARTEFACTO FRONTEND
+      # -----------------------------
+      - name: Download Frontend Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-code
+          path: coffehub/frontend
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+
+      # Normalizamos nombre repo (ghcr exige lowercase)
+      - name: Sanitize repo name
+        id: repo
+        run: echo "repo_lower=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      # -----------------------------
+      # BACKEND IMAGE (QA)
+      # -----------------------------
+      - name: Build backend image
+        run: docker build -t ghcr.io/${{ steps.repo.outputs.repo_lower }}/backend:qa coffehub/backend
+
+      - name: Push backend image
+        run: docker push ghcr.io/${{ steps.repo.outputs.repo_lower }}/backend:qa
+
+      # -----------------------------
+      # FRONTEND IMAGE (QA)
+      # -----------------------------
+      - name: Build frontend image
+        run: docker build -t ghcr.io/${{ steps.repo.outputs.repo_lower }}/frontend:qa coffehub/frontend
+
+      - name: Push frontend image
+        run: docker push ghcr.io/${{ steps.repo.outputs.repo_lower }}/frontend:qa
+
+
+  # ======================================================
+  # 3️⃣ DEPLOY QA AUTOMÁTICO + E2E TESTS CONTRA QA
+  # ======================================================
+  deploy-qa:
+    needs: build-push
+    runs-on: ubuntu-latest
+    environment:
+      name: qa
+      url: https://coffehub-frontend-qa.onrender.com
+
+    steps:
+      - name: Deploy Backend QA
+        run: curl -X POST "$RENDER_BACKEND_QA_HOOK"
+        env:
+          RENDER_BACKEND_QA_HOOK: ${{ secrets.RENDER_BACKEND_QA_HOOK }}
+
+      - name: Deploy Frontend QA
+        run: curl -X POST "$RENDER_FRONTEND_QA_HOOK"
+        env:
+          RENDER_FRONTEND_QA_HOOK: ${{ secrets.RENDER_FRONTEND_QA_HOOK }}
+
+      # Esperamos un poco a que Render levante
+      - name: Wait for QA environment
+        run: sleep 60
+
+      # -----------------------------
+      # E2E TESTS CONTRA QA
+      # -----------------------------
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install E2E dependencies
+        working-directory: e2e
+        run: npm install
+
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: npx playwright install --with-deps
+
+      - name: Run E2E tests against QA
+        working-directory: e2e
+        env:
+          FRONTEND_URL: "https://coffehub-frontend-qa.onrender.com"
+          BACKEND_URL: "https://coffehub-backend-qa.onrender.com"
+        run: npm test
+
+      - name: Upload E2E Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: e2e/reports
+
+
+  # ======================================================
+  # 4️⃣ DEPLOY PROD (MANUAL APPROVAL)
+  # ======================================================
+  deploy-prod:
+    needs: deploy-qa
+    runs-on: ubuntu-latest
+    environment:
+      name: prod
+      url: https://coffehub-frontend-prod.onrender.com
+
+    steps:
+      - name: Deploy Backend PROD
+        run: curl -X POST "$RENDER_BACKEND_PROD_HOOK"
+        env:
+          RENDER_BACKEND_PROD_HOOK: ${{ secrets.RENDER_BACKEND_PROD_HOOK }}
+
+      - name: Deploy Frontend PROD
+        run: curl -X POST "$RENDER_FRONTEND_PROD_HOOK"
+        env:
+          RENDER_FRONTEND_PROD_HOOK: ${{ secrets.RENDER_FRONTEND_PROD_HOOK }}

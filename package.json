@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^24.10.1"
+  },
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:chrome": "playwright test --project=chromium",
+    "test:e2e:report": "playwright show-report e2e/reports",
+    "test:e2e:codegen": "playwright codegen http://localhost:8080"}
+
+}
+
+

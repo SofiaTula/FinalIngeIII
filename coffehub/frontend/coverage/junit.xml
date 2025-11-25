@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="32" failures="0" errors="0" time="0.324">
+  <testsuite name="CoffeeHub Frontend - Tests Adicionales" errors="0" failures="0" skipped="0" timestamp="2025-11-12T02:37:50" time="0.117" tests="32">
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales getBackendURL() debe retornar localhost URL cuando hostname incluye localhost" name="CoffeeHub Frontend - Tests Adicionales getBackendURL() debe retornar localhost URL cuando hostname incluye localhost" time="0.006">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales getBackendURL() debe retornar QA URL cuando hostname incluye qa" name="CoffeeHub Frontend - Tests Adicionales getBackendURL() debe retornar QA URL cuando hostname incluye qa" time="0.003">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales getBackendURL() debe retornar PROD URL cuando hostname incluye prod" name="CoffeeHub Frontend - Tests Adicionales getBackendURL() debe retornar PROD URL cuando hostname incluye prod" time="0.001">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales getBackendURL() debe retornar QA URL como fallback para otros hostnames" name="CoffeeHub Frontend - Tests Adicionales getBackendURL() debe retornar QA URL como fallback para otros hostnames" time="0.001">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales deleteCoffee() debe cancelar eliminación si el usuario no confirma" name="CoffeeHub Frontend - Tests Adicionales deleteCoffee() debe cancelar eliminación si el usuario no confirma" time="0.001">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales deleteCoffee() debe eliminar café exitosamente cuando se confirma" name="CoffeeHub Frontend - Tests Adicionales deleteCoffee() debe eliminar café exitosamente cuando se confirma" time="0.002">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales deleteCoffee() debe manejar error de red al eliminar" name="CoffeeHub Frontend - Tests Adicionales deleteCoffee() debe manejar error de red al eliminar" time="0.001">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales deleteCoffee() debe manejar respuesta HTTP no exitosa" name="CoffeeHub Frontend - Tests Adicionales deleteCoffee() debe manejar respuesta HTTP no exitosa" time="0.001">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales handleFormSubmit() debe enviar datos del formulario correctamente" name="CoffeeHub Frontend - Tests Adicionales handleFormSubmit() debe enviar datos del formulario correctamente" time="0.002">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales handleFormSubmit() debe limpiar formulario después de envío exitoso" name="CoffeeHub Frontend - Tests Adicionales handleFormSubmit() debe limpiar formulario después de envío exitoso" time="0.002">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales handleFormSubmit() debe manejar error de red al enviar" name="CoffeeHub Frontend - Tests Adicionales handleFormSubmit() debe manejar error de red al enviar" time="0.001">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales handleFormSubmit() debe manejar respuesta HTTP no exitosa" name="CoffeeHub Frontend - Tests Adicionales handleFormSubmit() debe manejar respuesta HTTP no exitosa" time="0.001">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales handleFormSubmit() debe incluir todos los campos del café en el request" name="CoffeeHub Frontend - Tests Adicionales handleFormSubmit() debe incluir todos los campos del café en el request" time="0.001">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales updateStats() - casos edge debe manejar cuando los elementos no existen" name="CoffeeHub Frontend - Tests Adicionales updateStats() - casos edge debe manejar cuando los elementos no existen" time="0.001">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales updateStats() - casos edge debe manejar valores null en estadísticas" name="CoffeeHub Frontend - Tests Adicionales updateStats() - casos edge debe manejar valores null en estadísticas" time="0.001">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales updateStats() - casos edge debe usar valores por defecto cuando stats es undefined" name="CoffeeHub Frontend - Tests Adicionales updateStats() - casos edge debe usar valores por defecto cuando stats es undefined" time="0">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales updateStats() - casos edge debe formatear correctamente el precio con decimales" name="CoffeeHub Frontend - Tests Adicionales updateStats() - casos edge debe formatear correctamente el precio con decimales" time="0">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales init() debe ejecutarse sin errores" name="CoffeeHub Frontend - Tests Adicionales init() debe ejecutarse sin errores" time="0.001">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales init() debe inicializar estadísticas correctamente" name="CoffeeHub Frontend - Tests Adicionales init() debe inicializar estadísticas correctamente" time="0.003">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales toggleForm() - casos edge debe manejar cuando el formulario no existe" name="CoffeeHub Frontend - Tests Adicionales toggleForm() - casos edge debe manejar cuando el formulario no existe" time="0.002">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales toggleForm() - casos edge debe mostrar formulario cuando display está vacío" name="CoffeeHub Frontend - Tests Adicionales toggleForm() - casos edge debe mostrar formulario cuando display está vacío" time="0">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales cancelEdit() - casos edge debe manejar cuando el formulario no existe" name="CoffeeHub Frontend - Tests Adicionales cancelEdit() - casos edge debe manejar cuando el formulario no existe" time="0">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales cancelEdit() - casos edge debe limpiar el ID de edición" name="CoffeeHub Frontend - Tests Adicionales cancelEdit() - casos edge debe limpiar el ID de edición" time="0.001">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales editCoffee() - casos edge debe manejar cuando el formulario no existe" name="CoffeeHub Frontend - Tests Adicionales editCoffee() - casos edge debe manejar cuando el formulario no existe" time="0.001">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales editCoffee() - casos edge debe manejar café con todos los campos null" name="CoffeeHub Frontend - Tests Adicionales editCoffee() - casos edge debe manejar café con todos los campos null" time="0.002">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales editCoffee() - casos edge debe establecer correctamente el ID de edición" name="CoffeeHub Frontend - Tests Adicionales editCoffee() - casos edge debe establecer correctamente el ID de edición" time="0.002">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales renderCoffees() - casos edge debe manejar cuando el grid no existe" name="CoffeeHub Frontend - Tests Adicionales renderCoffees() - casos edge debe manejar cuando el grid no existe" time="0.001">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales renderCoffees() - casos edge debe manejar array null" name="CoffeeHub Frontend - Tests Adicionales renderCoffees() - casos edge debe manejar array null" time="0.001">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales renderCoffees() - casos edge debe limpiar el grid antes de renderizar" name="CoffeeHub Frontend - Tests Adicionales renderCoffees() - casos edge debe limpiar el grid antes de renderizar" time="0.002">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales renderCoffees() - casos edge debe renderizar múltiples cafés correctamente" name="CoffeeHub Frontend - Tests Adicionales renderCoffees() - casos edge debe renderizar múltiples cafés correctamente" time="0.004">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales setEditingCoffeeId() y getEditingCoffeeId() debe establecer y obtener el ID correctamente" name="CoffeeHub Frontend - Tests Adicionales setEditingCoffeeId() y getEditingCoffeeId() debe establecer y obtener el ID correctamente" time="0.001">
+    </testcase>
+    <testcase classname="CoffeeHub Frontend - Tests Adicionales setEditingCoffeeId() y getEditingCoffeeId() debe permitir establecer null" name="CoffeeHub Frontend - Tests Adicionales setEditingCoffeeId() y getEditingCoffeeId() debe permitir establecer null" time="0">
+    </testcase>
+  </testsuite>
+</testsuites>

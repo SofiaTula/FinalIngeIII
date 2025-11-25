@@ -1,0 +1,370 @@
+# ===========================================
+# ☕ COFFEEHUB CI/CD - QA + E2E + PRODUCCIÓN (Azure + MongoDB + SonarCloud)
+# ===========================================
+
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  name: SelfHosted
+
+variables:
+  - group: CoffeeHub-Secrets  
+  - name: RESOURCE_GROUP_NAME
+    value: 'TPS-INGE-2025'
+  - name: azureServiceConnection
+    value: 'azure-tp07-connection'
+  - name: backendAppNameQA
+    value: 'Coffeehub-Back-QA'
+  - name: frontendAppNameQA
+    value: 'Coffeehub-Front-QA'
+  - name: backendAppNameProd
+    value: 'Coffeehub-Back-Prod'
+  - name: frontendAppNameProd
+    value: 'Coffeehub-Front-Prod'
+
+# ===========================================================
+# STAGE 1: BUILD + TEST + SONARCLOUD (UNIFICADO)
+# ===========================================================
+stages:
+- stage: Build_And_Test
+  displayName: "CI: Build + Tests + SonarCloud (Backend + Frontend)"
+  jobs:
+  - job: BuildAndAnalyze
+    displayName: "🔨 Build + Tests + Análisis SonarCloud (Full Project)"
+    steps:
+      # ===============================
+      # 📦 BACKEND
+      # ===============================
+      - script: |
+          echo "📦 Instalando dependencias del backend..."
+          npm install
+        displayName: '📦 Instalar Dependencias Backend'
+        workingDirectory: 'coffehub/backend'
+
+      - script: |
+          echo "🧪 Ejecutando tests del backend..."
+          npm run test:ci
+        displayName: '🧪 Tests Backend'
+        workingDirectory: 'coffehub/backend'
+        env:
+          MONGODB_URI: $(MONGODB_URI_TEST)
+        continueOnError: false
+
+      # ===============================
+      # 📦 FRONTEND
+      # ===============================
+      - script: |
+          echo "📦 Instalando dependencias del frontend..."
+          npm install
+        displayName: '📦 Instalar Dependencias Frontend'
+        workingDirectory: 'coffehub/frontend'
+
+      - script: |
+          echo "🧪 Ejecutando tests del frontend..."
+          npm run test:ci
+        displayName: '🧪 Tests Frontend'
+        workingDirectory: 'coffehub/frontend'
+        continueOnError: false
+
+      # ===============================
+      # 📊 Publicar Resultados y Cobertura
+      # ===============================
+      - task: PublishTestResults@2
+        displayName: '📋 Publicar Resultados Tests (Backend + Frontend)'
+        inputs:
+          testResultsFormat: 'JUnit'
+          testResultsFiles: '**/junit.xml'
+          searchFolder: 'coffehub'
+          mergeTestResults: true
+          failTaskOnFailedTests: true
+          testRunTitle: 'CoffeeHub Tests (Backend + Frontend)'
+        condition: succeededOrFailed()
+
+      - task: PublishCodeCoverageResults@1
+        displayName: '📊 Publicar Code Coverage (Unificado)'
+        inputs:
+          codeCoverageTool: 'Cobertura'
+          summaryFileLocation: 'coffehub/backend/coverage/cobertura-coverage.xml'
+          reportDirectory: 'coffehub/backend/coverage'
+        condition: succeededOrFailed()
+
+      # =====================================================
+      # 🔎 SONARCLOUD (UNIFICADO: TP7-INGEIII)
+      # =====================================================
+      - task: SonarCloudPrepare@2
+        displayName: '🔍 Preparar análisis SonarCloud (Unificado)'
+        inputs:
+          SonarCloud: 'SonarCloudConnection'
+          organization: 'lucianahueda13'
+          scannerMode: 'CLI'
+          configMode: 'manual'
+          cliProjectKey: 'lucianahueda13_TP7-INGEIII.git'
+          cliProjectName: 'TP7-INGEIII'
+          extraProperties: |
+            sonar.sources=coffehub/backend,coffehub/frontend
+            sonar.tests=coffehub/backend/tests,coffehub/frontend/api.test.js
+            sonar.test.inclusions=**/*.test.js
+            sonar.exclusions=**/node_modules/**,**/coverage/**,**/*.config.js,**/*.setup.js,**/*.test.js,**/*.html,**/jest.env.js,**/jest.setup.js,**/server.js, e2e/**
+            sonar.coverage.exclusions=**/*.test.js,**/coverage/**,**/*.config.js,**/*.setup.js, e2e/**
+            sonar.javascript.lcov.reportPaths=coffehub/backend/coverage/lcov.info,coffehub/frontend/coverage/lcov.info
+            sonar.sourceEncoding=UTF-8
+
+      - task: SonarCloudAnalyze@2
+        displayName: '🧠 Ejecutar análisis SonarCloud (TP7-INGEIII)'
+
+      - task: SonarCloudPublish@2
+        displayName: '📊 Publicar resultados SonarCloud'
+        inputs:
+          pollingTimeoutSec: '300'
+
+      # ===============================
+      # 📦 Publicar Artefactos
+      # ===============================
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: 'coffehub/backend'
+          artifact: 'backend-code'
+        displayName: "📦 Publicar Código Backend"
+        condition: succeeded()
+
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: 'coffehub/frontend'
+          artifact: 'frontend-code'
+        displayName: "📦 Publicar Código Frontend"
+        condition: succeeded()
+
+
+# ===========================================================
+# STAGE 2: DEPLOY QA + TESTS E2E
+# ===========================================================
+- stage: Deploy_QA
+  displayName: "CD: Desplegar QA + Tests E2E"
+  dependsOn: Build_And_Test
+  condition: succeeded()
+  jobs:
+  - deployment: DeployQA
+    environment: 'QA'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            # --- Backend ---
+            - task: DownloadPipelineArtifact@2
+              inputs:
+                artifact: 'backend-code'
+                path: '$(Pipeline.Workspace)/backend-source'
+
+            - task: AzureWebApp@1
+              displayName: "🚀 Deploy Backend QA"
+              inputs:
+                azureSubscription: '$(azureServiceConnection)'
+                appName: '$(backendAppNameQA)'
+                package: '$(Pipeline.Workspace)/backend-source'
+                runtimeStack: 'NODE|18-lts'
+                startUpCommand: 'npm install && npm start'
+
+            - task: AzureCLI@2
+              displayName: '⚙️ Configurar MONGODB_URI_QA en Backend'
+              inputs:
+                azureSubscription: '$(azureServiceConnection)'
+                scriptType: 'bash'
+                scriptLocation: 'inlineScript'
+                inlineScript: |
+                  BACKEND_APP='$(backendAppNameQA)'
+                  RG='$(RESOURCE_GROUP_NAME)'
+                  az webapp config appsettings set \
+                    --name "$BACKEND_APP" \
+                    --resource-group "$RG" \
+                    --settings \
+                      MONGODB_URI="$(MONGODB_URI_QA)" \
+                      NODE_ENV="qa"
+
+            # --- Frontend ---
+            - task: DownloadPipelineArtifact@2
+              inputs:
+                artifact: 'frontend-code'
+                path: '$(Pipeline.Workspace)/frontend-source'
+
+            - task: AzureWebApp@1
+              displayName: "🚀 Deploy Frontend QA"
+              inputs:
+                azureSubscription: '$(azureServiceConnection)'
+                appName: '$(frontendAppNameQA)'
+                package: '$(Pipeline.Workspace)/frontend-source'
+                runtimeStack: 'NODE|18-lts'
+                startUpCommand: 'npm install && npm start'
+
+            - task: AzureCLI@2
+              displayName: '⚙️ Configurar BACKEND_URL en Frontend QA'
+              inputs:
+                azureSubscription: '$(azureServiceConnection)'
+                scriptType: 'bash'
+                scriptLocation: 'inlineScript'
+                inlineScript: |
+                  BACKEND_URL_VAL="https://coffeehub-back-qa-argeftdrb3dkb9du.brazilsouth-01.azurewebsites.net"
+                  FRONTEND_APP='$(frontendAppNameQA)'
+                  RG='$(RESOURCE_GROUP_NAME)'
+                  az webapp config appsettings set \
+                    --name "$FRONTEND_APP" \
+                    --resource-group "$RG" \
+                    --settings BACKEND_URL="$BACKEND_URL_VAL"
+
+            # --- Health Check ---
+            - script: |
+                echo "🔍 Ejecutando Smoke Tests QA..."
+                BACKEND_URL="https://coffeehub-back-qa-argeftdrb3dkb9du.brazilsouth-01.azurewebsites.net/api/health"
+                response=$(curl -s -o /dev/null -w "%{http_code}" "$BACKEND_URL")
+                if [ $response -eq 200 ]; then
+                  echo "✅ Health check passed!"
+                else
+                  echo "❌ Health check failed! Status: $response"
+                  exit 1
+                fi
+              displayName: '🔍 Smoke Tests QA'
+
+            # ======================================================
+            # ☕ TESTS E2E (Playwright) sobre ambiente QA
+            # ======================================================
+            - task: NodeTool@0
+              inputs:
+                versionSpec: '20.x'
+              displayName: '📦 Instalar Node.js para E2E'
+
+            - script: |
+                echo "🚀 Instalando dependencias Playwright..."
+                npm ci
+                npx playwright install --with-deps
+              displayName: '📦 Instalar dependencias E2E'
+              workingDirectory: 'e2e'
+
+            - script: |
+                echo "🧪 Ejecutando pruebas E2E sobre QA..."
+                export CI=true
+                export FRONTEND_URL="https://coffeehub-front-qa-argqggbvc3g0gkdc.brazilsouth-01.azurewebsites.net"
+                export BACKEND_URL="https://coffeehub-back-qa-argeftdrb3dkb9du.brazilsouth-01.azurewebsites.net"
+                npx playwright test --reporter=junit,line
+              workingDirectory: 'e2e'
+              displayName: '🧪 Ejecutar Tests E2E (QA)'
+
+            - task: PublishTestResults@2
+              displayName: '📊 Publicar Resultados E2E QA'
+              condition: always()
+              inputs:
+                testResultsFormat: 'JUnit'
+                testResultsFiles: '**/results.xml'
+                searchFolder: 'e2e'
+                mergeTestResults: true
+                failTaskOnFailedTests: true
+                testRunTitle: 'Playwright E2E - QA'
+
+            - task: PublishBuildArtifacts@1
+              condition: always()
+              displayName: '📤 Subir Reporte E2E Playwright'
+              inputs:
+                pathToPublish: 'e2e/reports'
+                artifactName: 'playwright-report-QA'
+
+
+# ===========================================================
+# STAGE 3: DEPLOY PROD
+# ===========================================================
+- stage: Deploy_PROD
+  displayName: "CD: Desplegar Producción + Smoke Tests"
+  dependsOn: Deploy_QA
+  condition: succeeded()
+  jobs:
+  - deployment: DeployPROD
+    environment: 'PROD'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+            - task: DownloadPipelineArtifact@2
+              inputs:
+                artifact: 'backend-code'
+                path: '$(Pipeline.Workspace)/backend-source'
+
+            - task: AzureWebApp@1
+              displayName: "🚀 Deploy Backend PROD"
+              inputs:
+                azureSubscription: '$(azureServiceConnection)'
+                appName: '$(backendAppNameProd)'
+                package: '$(Pipeline.Workspace)/backend-source'
+                runtimeStack: 'NODE|18-lts'
+                startUpCommand: 'npm install && npm start'
+
+            - task: AzureCLI@2
+              displayName: '⚙️ Configurar MONGODB_URI_PROD en Backend'
+              inputs:
+                azureSubscription: '$(azureServiceConnection)'
+                scriptType: 'bash'
+                scriptLocation: 'inlineScript'
+                inlineScript: |
+                  BACKEND_APP='$(backendAppNameProd)'
+                  RG='$(RESOURCE_GROUP_NAME)'
+                  az webapp config appsettings set \
+                    --name "$BACKEND_APP" \
+                    --resource-group "$RG" \
+                    --settings \
+                      MONGODB_URI="$(MONGODB_URI_PROD)" \
+                      NODE_ENV="production"
+
+            - task: AzureCLI@2
+              displayName: '⚙️ Configurar CORS en Backend PROD'
+              inputs:
+                azureSubscription: '$(azureServiceConnection)'
+                scriptType: 'bash'
+                scriptLocation: 'inlineScript'
+                inlineScript: |
+                  FRONTEND_URL_VAL="https://coffeehub-front-prod-hgh2ehb7bzchh4ft.brazilsouth-01.azurewebsites.net"
+                  BACKEND_APP='$(backendAppNameProd)'
+                  RG='$(RESOURCE_GROUP_NAME)'
+                  az webapp cors add \
+                    --name "$BACKEND_APP" \
+                    --resource-group "$RG" \
+                    --allowed-origins "$FRONTEND_URL_VAL"
+
+            - task: DownloadPipelineArtifact@2
+              inputs:
+                artifact: 'frontend-code'
+                path: '$(Pipeline.Workspace)/frontend-source'
+
+            - task: AzureWebApp@1
+              displayName: "🚀 Deploy Frontend PROD"
+              inputs:
+                azureSubscription: '$(azureServiceConnection)'
+                appName: '$(frontendAppNameProd)'
+                package: '$(Pipeline.Workspace)/frontend-source'
+                runtimeStack: 'NODE|18-lts'
+                startUpCommand: 'npm install && npm start'
+
+            - task: AzureCLI@2
+              displayName: '⚙️ Configurar BACKEND_URL en Frontend PROD'
+              inputs:
+                azureSubscription: '$(azureServiceConnection)'
+                scriptType: 'bash'
+                scriptLocation: 'inlineScript'
+                inlineScript: |
+                  BACKEND_URL_VAL="https://coffeehub-back-prod-bzgaa5ekbed7fret.brazilsouth-01.azurewebsites.net"
+                  FRONTEND_APP='$(frontendAppNameProd)'
+                  RG='$(RESOURCE_GROUP_NAME)'
+                  az webapp config appsettings set \
+                    --name "$FRONTEND_APP" \
+                    --resource-group "$RG" \
+                    --settings BACKEND_URL="$BACKEND_URL_VAL"
+
+            - script: |
+                echo "🔍 Ejecutando Smoke Tests PROD..."
+                BACKEND_URL="https://coffeehub-back-prod-bzgaa5ekbed7fret.brazilsouth-01.azurewebsites.net/api/health"
+                response=$(curl -s -o /dev/null -w "%{http_code}" "$BACKEND_URL")
+                if [ $response -eq 200 ]; then
+                  echo "✅ Health check passed!"
+                else
+                  echo "❌ Health check failed! Status: $response"
+                  exit 1
+                fi
+              displayName: '🔍 Smoke Tests PROD'
