@@ -18,7 +18,7 @@ export default defineConfig({
     // 👉 En QA usar URL de Render automáticamente
     baseURL: process.env.FRONTEND_URL || (
       process.env.CI
-        ? "https://coffehub-frontend-qa.onrender.com"
+        ? "https://coffehub-frontend-qa-66nb.onrender.com"
         : "http://localhost:8080"
     ),
 
