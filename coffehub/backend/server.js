@@ -195,12 +195,12 @@ const allowedOrigins = [
   "http://localhost:4000",
 
   // Render QA (frontend y backend)
-  "https://coffehub-frontend-qa.onrender.com",
-  "https://coffehub-backend-qa.onrender.com",
+  "https://coffehub-frontend-qa-66nb.onrender.com",
+  "https://coffehub-backend-qa-apsk.onrender.com",
 
   // Render PROD (cuando lo crees)
-  "https://coffehub-frontend-prod.onrender.com",
-  "https://coffehub-backend-prod.onrender.com"
+  "https://coffehub-frontend-prod-sgpy.onrender.com",
+  "https://coffehub-backend-prod-vhuc.onrender.com"
 ];
 
 
