@@ -11,7 +11,7 @@ test.beforeAll(async ({ request }) => {
 
   for (const product of products) {
     if (product._id) {
-      await request.delete(`${BACKEND_URL}/api/products/${product._id}`);
+      await request.delete(`${BACKEND_URL}/api/productss/${product._id}`);
     }
   }
 
